@@ -1,0 +1,49 @@
+version: 2.1
+
+executors:
+  go:
+    docker:
+      - image: circleci/golang:1.11.4
+
+commands:
+  tf-install:
+    description: installs terraform binary
+    parameters:
+      version:
+        type: string
+        default: 0.11.11
+      os:
+        type: string
+        default: linux
+      arch:
+        type: string
+        default: amd64
+    steps:
+      - run:
+          name: download terraform
+          command: curl -L -o /tmp/terraform.zip |
+                   https://releases.hashicorp.com/terraform/<< parameters.version >>/terraform_<< parameters.version >>_<< parameters.os >>_<< parameters.arch >>.zip
+      - run: unzip -d ./bin /tmp/terraform.zip
+
+  acctest:
+    description: "Run acceptance tests for cloud providers"
+    parameters:
+      provider:
+        type: string
+    steps:
+      - checkout
+      - run:
+          working_directory: << parameters.provider >>
+          command: pwd && ls -l && cat *.txt
+jobs:
+  aws-provider:
+    executor: go
+    steps:
+      - tf-install
+      - checkout
+
+workflows:
+  version: 2
+  acceptance:
+    jobs:
+      - aws-provider
